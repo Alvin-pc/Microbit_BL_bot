@@ -49,13 +49,13 @@ echo Compiling lsm303agr.c
 $CC -c $CFLAGS lsm303agr.c
 echo Compiling utility.c
 $CC -c $CFLAGS utility.c
-echo Compiling motion.c
-$CC -c $CFLAGS motion.c
+echo Compiling motor_control.c
+$CC -c $CFLAGS motor_control.c
 
 # Link the object code to form exectuable program
 echo Generating libbsp.a
 /bin/rm -f libbsp.a
 $AR -r libbsp.a startup.o system.o board.o \
-        serial.o gpio.o pwm.o pwm_audio.o adc.o lib.o audio.o buggy_controller.o lsm303agr.o i2c.o utility.o motion.o
+        serial.o gpio.o pwm.o pwm_audio.o adc.o lib.o audio.o buggy_controller.o lsm303agr.o i2c.o utility.o motor_control.o
 /bin/rm -f system.o board.o utility.o\
-        serial.o gpio.o pwm.o pwm_audio.o adc.o lib.o audio.o buggy_controller.o lsm303agr.o i2c.o motion.o
+        serial.o gpio.o pwm.o pwm_audio.o adc.o lib.o audio.o buggy_controller.o lsm303agr.o i2c.o motor_control.o

@@ -4,65 +4,104 @@
 #include "pwm.h"
 #include "lib.h"
 #include "motor_control.h"
+#include "lsm303agr.h"
+#include "estimator.h"
+#include <math.h>
+#include "../rtx/cmsis_os2.h"
+#include <stdio.h>
+
+float accData[3] = {0.0, 0.0, 0.0};
+float magData[3] = {0.0, 0.0, 0.0};
+float angles[3] = {0.0, 0.0, 0.0};
 
 
-uint8_t lDutyCycle, rDutyCycle;
-int frequency = 345;
+void init_motor_control()
+{
+    accReadXYZ(accData);
+    magReadXYZ(magData);
+    referenceHeading = estimate_heading_z(accData, magData, angles);
+}
+
+// uint8_t lDutyCycle, rDutyCycle;
+// int frequency = 345;
 // int lFrequency = 345;
 // int rFrequency = 350;
 
-void move(char direction, int speed)
+void move(enum states* state)
 {
-    switch (direction)
+    accReadXYZ(accData);
+    magReadXYZ(magData);
+    currentHeading = estimate_heading_z(accData, magData, angles);
+
+    error = referenceHeading - currentHeading;
+    if (error > 250)
     {
-    case 'f':
-        // rDutyCycle = 50 - speed/2;
-        // lDutyCycle = 100 - rDutyCycle;
-        rDutyCycle = 50 - speed/2;
-        lDutyCycle = 50 + speed/2;
+        error = error - 360;
+    }
+    else if (error < -250)
+    {
+        error = error + 360;
+    }
+
+    controlSignal = kP * error;
+    int base;
+
+    switch (*state)
+    {
+    case forward:
+        base = 60;
+        rControlSignal = base - 2 + controlSignal;
+        lControlSignal = (100 - base) + controlSignal;
         break;
 
-    case 'l':
-        rDutyCycle = 100 - (50 - speed/2);
-        lDutyCycle = rDutyCycle;
+    case backward:
+        base =40;
+        rControlSignal = base - 2 + controlSignal;
+        lControlSignal = (100 - base) + controlSignal;
+
         break;
 
-    case 'b':
-        lDutyCycle = 50 - speed/2;
-        rDutyCycle = 100 - lDutyCycle;
+    case left:
+        rControlSignal = 50 + controlSignal;
+        lControlSignal = 50 + controlSignal;
         break;
 
-    case 'r':
-        rDutyCycle = 50 - speed/2;
-        lDutyCycle = rDutyCycle;
+    case right:
+        rControlSignal = 50 + controlSignal;
+        lControlSignal = 50 + controlSignal;
         break;
     
-    case 's':
-        lDutyCycle = 50;
-        rDutyCycle = 50;
+    case stop:
+        rControlSignal = STOPPING_PWM;
+        lControlSignal = STOPPING_PWM;
         break;
 
     default:
-        lDutyCycle = 50;
-        rDutyCycle = 50;
+        rControlSignal = STOPPING_PWM;
+        lControlSignal = STOPPING_PWM;
         break;
     }
-    
-    printf("freq = %d, direction: %c, speed = %d, lDutyCycle = %d, rDutyCycle = %d\n\r", frequency, direction, speed, lDutyCycle, rDutyCycle);
-    pwm_out(1, frequency, lDutyCycle);
-    pwm_out(2, frequency, rDutyCycle);
 
+    if (rControlSignal < 1)
+    {
+        rControlSignal = 1;
+    }
+    else if (rControlSignal > 50)
+    {
+        rControlSignal = 50;
+    }
 
-    // printf("lFreq = %d, rFreq = %d, direction: %c, speed = %d, lDutyCycle = %d, rDutyCycle = %d\n\r", lFrequency, rFrequency, direction, speed, lDutyCycle, rDutyCycle);
-    // pwm_out(1, lFrequency, lDutyCycle);
-    // pwm_out(2, rFrequency, rDutyCycle);
+    if (lControlSignal < 50)
+    {
+        lControlSignal = 50;
+    }
+    else if (lControlSignal > 99)
+    {
+        lControlSignal = 99;
+    }
 
-
-    // for (int freq=340;freq<350;freq++)
-    // {
-    //     printf("freq = %d, direction: %c, speed = %d, lDutyCycle = %d, rDutyCycle = %d\n\r", freq, direction, speed, lDutyCycle, rDutyCycle);
-    //     pwm_out(1, freq, lDutyCycle);
-    //     pwm_out(2, freq, rDutyCycle);
-    //     delay_ms(5000);
-    // }
+    printf("lDutyCycle = %d, rDutyCycle = %d\n\r", lControlSignal, rControlSignal);
+    pwm_out(PWM_CH1, PWM_FREQUENCY, rControlSignal);
+    pwm_out(PWM_CH2, PWM_FREQUENCY, lControlSignal);
+    osDelay(100);
 }

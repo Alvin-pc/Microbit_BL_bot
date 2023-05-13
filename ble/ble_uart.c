@@ -86,7 +86,7 @@ ble_recv_handler_t m_ble_recv_handler;
 
 #define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
 
-#define DEVICE_NAME                     "Nordic_Navin_Swapnil"                               /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "Nordic_UART_DV"                               /**< Name of device. Will be included in the advertising data. */
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 
 #define APP_BLE_OBSERVER_PRIO           3                                           /**< Application's BLE observer priority. You shouldn't need to modify this value. */
@@ -622,7 +622,7 @@ static void buttons_leds_init(bool * p_erase_bonds)
 {
     bsp_event_t startup_event;
 
-    uint32_t err_code = bsp_init(BSP_INIT_LEDS |  BSP_INIT_BUTTONS, bsp_event_handler);
+    uint32_t err_code = bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, bsp_event_handler);
     APP_ERROR_CHECK(err_code);
 
     err_code = bsp_btn_ble_init(NULL, &startup_event);

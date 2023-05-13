@@ -1,34 +1,27 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include "../rtx/cmsis_os2.h"
 #include "../bsp/serial.h"
 #include "board.h"
 #include "buggy_controller.h"
 #include "utility.h"
 #include "../ble/ble_uart.h"
-#include "motion.h"
+#include "motor_control.h"
 
 #define MSGQUEUE_LENGTH 10
 //char* msg ="[refHeading,currHeading,error,ctrlSignal,lctrlSignal,rctrlSignal]";
 char msg[100];
 
-extern float referenceHeading;
-extern float currentHeading;
-extern float controlSignal;
-extern int error;
-extern int lControlSignal;
-extern int rControlSignal;
-extern float kP;
 
-osThreadId_t tid_log;
-osThreadId_t tid_forward;
-osThreadId_t tid_backward;
-osThreadId_t tid_left;
-osThreadId_t tid_right;
+// osThreadId_t tid_forward;
+// osThreadId_t tid_backward;
+// osThreadId_t tid_left;
+// osThreadId_t tid_right;
 
 
-osThreadId_t active_thread[10];
-int active_count = -1;
+// osThreadId_t active_thread[10];
+// int active_count = -1;
 
 
 osMessageQueueId_t controller_MsgQueue;
@@ -45,13 +38,13 @@ uint8_t rev[5][5] = {{0, 0, 1, 0, 0},
                      {0, 1, 1, 1, 0},
                      {0, 0, 1, 0, 0}};
 
-uint8_t right[5][5] = {{1, 1, 1, 1, 0},
+uint8_t right_rotate[5][5] = {{1, 1, 1, 1, 0},
                        {1, 0, 0, 1, 0},
                        {1, 0, 0, 1, 0},
                        {1, 0, 1, 1, 1},
                        {1, 0, 0, 1, 0}};
 
-uint8_t left[5][5] = {{0, 1, 1, 1, 1},
+uint8_t left_rotate[5][5] = {{0, 1, 1, 1, 1},
                       {0, 1, 0, 0, 1},
                       {0, 1, 0, 0, 1},
                       {1, 1, 1, 0, 1},
@@ -65,6 +58,7 @@ typedef struct
 
 int init_controller(void)
 {
+  init_motor_control();
   puts1("init controller\n\r");
   controller_MsgQueue = osMessageQueueNew(MSGQUEUE_LENGTH, sizeof(ControllerMsg), NULL);
   if (controller_MsgQueue == NULL)
@@ -75,7 +69,7 @@ int init_controller(void)
   return 0;
 }
 
-void check_controllerMsg(void)
+void check_controllerMsg(enum states* state)
 {
   ControllerMsg msg;
   osStatus_t status;
@@ -91,7 +85,7 @@ void check_controllerMsg(void)
       puts1("command in Cmd Message Queue: ");
       puts1(command);
       puts1("\n\r");
-      execute_driver(command);
+      execute_driver(command, state);
     }
   }
 }
@@ -106,121 +100,39 @@ void add_controllerMsg(char *command)
   puts1("\n\r");
 }
 
-void execute_driver(char *command)
+void execute_driver(char *command, enum states* state)
 {
 
   if (strcasecmp(command, "FORWARD") == 0)
   {
-
     puts1("MOVING FORWARD\n\r");
-    task_stop();
-    tid_forward = osThreadNew(forward_motion, NULL, NULL);
-    osThreadSetPriority(forward_motion, osPriorityLow);
-    active_thread[++active_count] = tid_forward;
+    *state = forward;
   }
   else if (strcasecmp(command, "BACKWARD") == 0)
   {
-
     puts1("MOVING BACKWARD\n\r");
-    task_stop();
-    tid_backward = osThreadNew(backward_motion, NULL, NULL);
-    osThreadSetPriority(backward_motion, osPriorityLow);
-    active_thread[++active_count] = tid_backward;
+    *state = backward;
   }
   else if (strcasecmp(command, "LEFT") == 0)
   {
-
     puts1("MOVING LEFT\n\r");
-    task_stop();
-    tid_left = osThreadNew(spot_left, NULL, NULL);
-    osThreadSetPriority(spot_left, osPriorityLow);
-    active_thread[++active_count] = tid_left;
+    *state = left;
 
   }
   else if (strcasecmp(command, "RIGHT") == 0)
   {
-
     puts1("MOVING RIGHT\n\r");
-    task_stop();
-    tid_right = osThreadNew(spot_right, NULL, NULL);
-    osThreadSetPriority(spot_right, osPriorityLow);
-    active_thread[++active_count] = tid_right;
+    *state = right;
 
   }
   else if (strcasecmp(command, "STOP") == 0)
   {
-
     puts1("STOPPING\n\r");
-    task_stop();
+    *state = stop;
   }
   else if (strcasecmp(command, "LOG") == 0)
   {
-    
     puts1("LOGGING\n\r");
-    tid_log = osThreadNew(task_log, NULL, NULL);
-    osThreadSetPriority(task_log, osPriorityLow);
-    // char buff[10];
-    // ftoa(-656.73,buff,3);
-    // puts1("test = ");
-    // puts1(buff);
-    // puts1("\n\r");
-  }
-  else if (strcasecmp(command, "STOP LOG") == 0)
-  {
-
-    puts1("STOPINGS LOGS\n\r");
-    task_stop_log();
-  }
-}
-
-void task_log(void *args)
-{
-  ble_send((uint8_t *)msg, strlen((char *)msg));
-  while (1)
-  {
-   
-    printMetrics(referenceHeading, currentHeading, error, controlSignal,lControlSignal,rControlSignal, msg);
-    puts1("msg = ");
-    puts1(msg);
-    puts1("\n\r");
-    ble_send((uint8_t *)msg, strlen((char *)msg));
-    osDelay(1000);
-    
-  }
-}
-
-void task_stop_log(void)
-{
-
-  osStatus_t status = osThreadTerminate(tid_log); // stops the thread
-  if (status == osOK)
-  {
-    puts("Thread was terminated successfully/n/r");
-  }
-  else
-  {
-    puts("Failed to terminate a thread/n/r");
-  }
-}
-
-void task_stop(void)
-{
-  int len = active_count;
-  if (len >= 0)
-  {
-    stop_motion();
-    for (int i = 0; i <= len; i++)
-    {
-      osStatus_t status = osThreadTerminate(active_thread[i]); // stops the thread
-      if (status == osOK)
-      {
-        puts("Thread was terminated successfully/n/r");
-        active_count--;
-      }
-      else
-      {
-        puts("Thread was not terminated/n/r");
-      }
-    }
+    osThreadFlagsSet(tid_log, 2);
   }
 }
