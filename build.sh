@@ -48,5 +48,5 @@ rm main.o app.out app.hex
 
 # The above command is applicable for a Windows PC. You may change it
 # appropriately to on Linux or MacOS. It should be something like:
-cp MICROBIT.hex /media/navin/MICROBIT       # linux
+cp MICROBIT.hex /media/alvin/MICROBIT       # linux
 # cp MICROBIT.hex /Volumes/MICROBIT     # mac

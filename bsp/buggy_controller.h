@@ -1,12 +1,13 @@
-extern osThreadId_t tid_log;
-extern float referenceHeading;
-extern float currentHeading;
-extern float controlSignal;
-extern int error;
-extern int lControlSignal;
-extern int rControlSignal;
-extern float kP;
-extern enum states state;
+#include "motor_control.h"
+
+// extern float referenceHeading;
+// extern float currentHeading;
+// extern float controlSignal;
+// extern int error;
+// extern int lControlSignal;
+// extern int rControlSignal;
+// extern float kP;
+// extern enum states state;
 
 int init_controller(void);
 void check_controllerMsg(enum states* state);

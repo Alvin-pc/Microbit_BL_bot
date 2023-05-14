@@ -8,14 +8,14 @@
 #include "estimator.h"
 #include <math.h>
 #include "../rtx/cmsis_os2.h"
-#include <stdio.h>
 
 float accData[3] = {0.0, 0.0, 0.0};
 float magData[3] = {0.0, 0.0, 0.0};
 float angles[3] = {0.0, 0.0, 0.0};
 
+enum states state = stop;
 
-void init_motor_control()
+void init_motor_control(void)
 {
     accReadXYZ(accData);
     magReadXYZ(magData);
@@ -52,28 +52,32 @@ void move(enum states* state)
         base = 60;
         rControlSignal = base - 2 + controlSignal;
         lControlSignal = (100 - base) + controlSignal;
+        puts1("CF ");
         break;
 
     case backward:
         base =40;
         rControlSignal = base - 2 + controlSignal;
         lControlSignal = (100 - base) + controlSignal;
-
+        puts1("CB ");
         break;
 
     case left:
         rControlSignal = 50 + controlSignal;
         lControlSignal = 50 + controlSignal;
+        puts1("CL ");
         break;
 
     case right:
         rControlSignal = 50 + controlSignal;
         lControlSignal = 50 + controlSignal;
+        puts1("CR ");
         break;
     
     case stop:
         rControlSignal = STOPPING_PWM;
         lControlSignal = STOPPING_PWM;
+        puts1("CS ");
         break;
 
     default:
@@ -100,7 +104,7 @@ void move(enum states* state)
         lControlSignal = 99;
     }
 
-    printf("lDutyCycle = %d, rDutyCycle = %d\n\r", lControlSignal, rControlSignal);
+    // printf("lDutyCycle = %d, rDutyCycle = %d\n\r", lControlSignal, rControlSignal);
     pwm_out(PWM_CH1, PWM_FREQUENCY, rControlSignal);
     pwm_out(PWM_CH2, PWM_FREQUENCY, lControlSignal);
     osDelay(100);

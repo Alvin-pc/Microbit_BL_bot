@@ -7,11 +7,12 @@
 #include "buggy_controller.h"
 #include "utility.h"
 #include "../ble/ble_uart.h"
-#include "motor_control.h"
+
 
 #define MSGQUEUE_LENGTH 10
 //char* msg ="[refHeading,currHeading,error,ctrlSignal,lctrlSignal,rctrlSignal]";
 char msg[100];
+extern osThreadId_t tid_log;
 
 
 // osThreadId_t tid_forward;

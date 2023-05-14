@@ -4,10 +4,10 @@
 #include "ble_uart.h"
 #include "board.h"
 #include "lib.h"
+#include "motor_control.h"
 #include "buggy_controller.h"
 #include "utility.h"
 #include "bsp/lsm303agr.h"
-#include "motor_control.h"
 
 
 /* OS objects */
@@ -29,19 +29,26 @@ uint8_t pic[5][5] ={        {0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0},
-                            {0, 0, 0, 0, 0} 
+                            {0, 0, 0, 0, 1} 
                     };	
 
 
 extern char msg[];
-extern float referenceHeading;
-extern float currentHeading;
-extern float controlSignal;
-extern int error;
-extern int lControlSignal;
-extern int rControlSignal;
-extern float kP;
+// extern float referenceHeading;
+// extern float currentHeading;
+// extern float controlSignal;
+// extern int error;
+// extern int lControlSignal;
+// extern int rControlSignal;
+// extern float kP;
 
+float referenceHeading=0.0;
+float currentHeading=0.0;
+float controlSignal=0.0;
+int error=0;
+int lControlSignal=0;
+int rControlSignal=0;
+float kP = kPbase;
 
 /* Called from BLE softdevice using SWI2_EGU2_IRQHandler */
 static void ble_recv_handler(const uint8_t s[], uint32_t len)
@@ -58,17 +65,19 @@ static void ble_recv_handler(const uint8_t s[], uint32_t len)
     /* Echo on UART */
     puts1("cmd from BLE : ");
     puts1((char *)cmd_buf);
+    puts1("\n\r");
 
     add_controllerMsg((char *) cmd_buf);
 
     /* Signal the waiting task. */
-    osThreadFlagsSet(tid_ctrl, 1); 
+    osThreadFlagsSet(tid_disp, 1); 
 }
 
 void task_ctrl(void *arg)
-{
+{    
     while (1)
     {
+        puts1("Control Thread Running...\r");
         /* Receive a command from BLE */
         move(&state);
         
@@ -79,33 +88,33 @@ void task_ctrl(void *arg)
 
 void task_disp(void *arg)
 {
-    while (1)
-    {      
+    while(1)
+    {
         osThreadFlagsWait(1, osFlagsWaitAny, osWaitForever);
-
+        puts1("Display Thread Running...\n\r"); 
         led_display(pic); 
         check_controllerMsg(&state);
-       
-    }
+    }      
+    
 }
 // Display Task
 
 void task_log(void *args)
 {
-  osThreadFlagsWait(2, osFlagsWaitAny, osWaitForever);
-  int log_counter = 0;
-  ble_send((uint8_t *)msg, strlen((char *)msg));
+//   int log_counter = 0;
+//   ble_send((uint8_t *)msg, strlen((char *)msg));
   while (1)
   {
-    if(log_counter % 100 == 0)
-    {
-      printMetrics(referenceHeading, currentHeading, error, controlSignal,lControlSignal,rControlSignal, msg);
-      puts1("msg = ");
-      puts1(msg);
-      puts1("\n\r");
-      ble_send((uint8_t *)msg, strlen((char *)msg));
-    } 
-    
+    osThreadFlagsWait(2, osFlagsWaitAny, osWaitForever);
+    puts1("Log Thread Running...\n\r");
+    // if(log_counter % 100 == 0)
+    // {
+    printMetrics(referenceHeading, currentHeading, error, controlSignal,lControlSignal,rControlSignal, msg);
+    puts1("msg = ");
+    puts1(msg);
+    puts1("\n\r");
+    ble_send((uint8_t *)msg, strlen((char *)msg));
+    // }     
     osDelay(1000);    
   }
 }
