@@ -7,19 +7,6 @@ The bot can be to some extent be controlled to move with open loop control, but 
 Additional features like Neopixels, LEDs, and speaker were used to enunciate the state of the bot. These call for multiple threads that have to be synchronised and queued appropriately to give a funtioning bot.
 
 
-
-## Bluetooth MICROBIT
-
-
-[SDK Setup](nRF5_SDK_17.1.0_ddde560/README.md)
-
-[Bluetooth Setup](ble/README.md)
-
-[RTX Setup](rtx/README.md)
-
-[BSP Setup](bsp/README.md)
-
-
 ## Bluetooth MICROBIT
 
 
