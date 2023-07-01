@@ -1,4 +1,4 @@
-## Abstract- Bot controlled via Bluetooth mobile app
+## Bot controlled via Bluetooth mobile app
 The project makes use of the BBC micro:bit, a pocket size computer with 25 red LED lights, 2 programmabe tactile buttons, microphone, speaker, accelerometer, magnetometer and much more. We used the Kitronik mini buggy kit, to build a moving bot that can be controlled via a Bluetooth app on a mobile device.
 ![image](https://github.com/Alvin-pc/Microbit_BL_bot/assets/105581851/cfbbaa56-13e0-4ad4-bc89-bf3a0c954e78)
 The SoC is nRF52, and we built the Board Support Package(BSP) and BLE(Bluetooth Interface) out of the nRF52 SDK. RTX Real-Time Operating system(ARM Core M Series) based on CMSIS-RTOS2 API implementation, is used to syrochronise several threads that run on the bot. 
